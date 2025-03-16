@@ -2,32 +2,66 @@ import { useEffect, useState } from 'react';
 import AstroChart from '@astrodraw/astrochart';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import Select from 'react-select';
+import Select, { SingleValue } from 'react-select';
 import axios from 'axios';
 import './App.css';
+
+interface OptionType {
+  value: string;
+  label: string;
+}
+
+interface Planet {
+  planetName: string;
+  planetLongitude: number;
+}
+
+interface Cusp {
+  cuspLongitude: number;
+}
+
+interface InterestZone {
+  name: string;
+  angle: number;
+}
+
+interface BirthChart {
+  planets: Planet[];
+  cuspides: Cusp[];
+  interestZone: InterestZone[];
+}
+
+interface TransitAspect {
+  planetName2: string;
+  longitude: number;
+}
+
+interface TransitData {
+  transitAspects: TransitAspect[];
+  cuspides: Cusp[];
+}
 
 const GEO_NAMES_USERNAME = 'marcalcantarageo';
 const API_URL = '/ephemeris/calculateBirthChart';
 const TRANSIT_API_URL = '/ephemeris/transitCalculation';
 
 function App() {
-  const [name, setName] = useState('');
-  const [birthdate, setBirthdate] = useState(new Date());
-  const [transitTime, setTransitTime] = useState(new Date());
-  const [country, setCountry] = useState('');
-  const [city, setCity] = useState('');
-  const [countryOptions, setCountryOptions] = useState([]);
-  const [cityOptions, setCityOptions] = useState([]);
-  const [lat, setLat] = useState(null);
-  const [long, setLong] = useState(null);
-  const [utcOffset, setUtcOffset] = useState(null);
-  const [showForm, setShowForm] = useState(true);
-  const [gptResponse, setGptResponse] = useState('');
-  const [gptLoading, setGptLoading] = useState(false);
+  const [name, setName] = useState<string>('');
+  const [birthdate, setBirthdate] = useState<Date>(new Date());
+  const [transitTime, setTransitTime] = useState<Date>(new Date());
+  const [country, setCountry] = useState<string>('');
+  const [city, setCity] = useState<string>('');
+  const [countryOptions, setCountryOptions] = useState<OptionType[]>([]);
+  const [cityOptions, setCityOptions] = useState<OptionType[]>([]);
+  const [lat, setLat] = useState<number | null>(null);
+  const [long, setLong] = useState<number | null>(null);
+  const [utcOffset, setUtcOffset] = useState<number | null>(null);
+  const [showForm, setShowForm] = useState<boolean>(true);
+  const [gptResponse, setGptResponse] = useState<string>('');
+  const [gptLoading, setGptLoading] = useState<boolean>(false);
 
-  // --- Utility: format date in local ISO format ---
-  const formatLocalDateTime = (date) => {
-    const pad = (num) => String(num).padStart(2, '0');
+  const formatLocalDateTime = (date: Date) => {
+    const pad = (num: number) => String(num).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   };
 
@@ -35,7 +69,7 @@ function App() {
     const fetchCountries = async () => {
       try {
         const response = await axios.get(`http://api.geonames.org/countryInfoJSON?username=${GEO_NAMES_USERNAME}`);
-        const countries = response.data.geonames.map(country => ({
+        const countries = response.data.geonames.map((country: any) => ({
           value: country.countryCode,
           label: country.countryName,
         }));
@@ -52,7 +86,7 @@ function App() {
       const fetchCities = async () => {
         try {
           const response = await axios.get(`http://api.geonames.org/searchJSON?country=${country}&maxRows=50&username=${GEO_NAMES_USERNAME}`);
-          const cities = response.data.geonames.map(city => ({
+          const cities = response.data.geonames.map((city: any) => ({
             value: city.name,
             label: city.name,
           }));
@@ -71,8 +105,8 @@ function App() {
         try {
           const response = await axios.get(`http://api.geonames.org/searchJSON?q=${city}&maxRows=1&username=${GEO_NAMES_USERNAME}`);
           const cityData = response.data.geonames[0];
-          setLat(cityData.lat);
-          setLong(cityData.lng);
+          setLat(parseFloat(cityData.lat));
+          setLong(parseFloat(cityData.lng));
 
           const timezoneResponse = await axios.get(`http://api.geonames.org/timezoneJSON?lat=${cityData.lat}&lng=${cityData.lng}&username=${GEO_NAMES_USERNAME}`);
           const timezoneOffset = timezoneResponse.data.gmtOffset;
@@ -85,9 +119,9 @@ function App() {
     }
   }, [city, birthdate]);
 
-  const isFormValid = name && birthdate && country && city && lat && long;
+  const isFormValid = name && birthdate && country && city && lat !== null && long !== null;
 
-  const mapPlanetName = (planetName) => {
+  const mapPlanetName = (planetName: string) => {
     switch (planetName) {
       case 'Sol': return 'Sun';
       case 'Lua': return 'Moon';
@@ -106,11 +140,12 @@ function App() {
     }
   };
 
-  const renderAstroChart = (birthChart, transitData = null) => {
-    document.getElementById('paper').innerHTML = '';
+  const renderAstroChart = (birthChart: BirthChart, transitData: TransitData | null = null) => {
+    const paper = document.getElementById('paper');
+    if (paper) paper.innerHTML = '';
 
-    const planetsData = {};
-    birthChart.planets.forEach(planet => {
+    const planetsData: Record<string, number[]> = {};
+    birthChart.planets.forEach((planet) => {
       const astroName = mapPlanetName(planet.planetName);
       planetsData[astroName] = [planet.planetLongitude];
     });
@@ -141,7 +176,7 @@ function App() {
 
     const radix = chart.radix(dataRadix);
 
-    birthChart.interestZone.forEach(zone => {
+    birthChart.interestZone.forEach((zone) => {
       let poiKey;
       switch (zone.name) {
         case 'ASC': poiKey = 'As'; break;
@@ -154,8 +189,8 @@ function App() {
     });
 
     if (transitData) {
-      const transitPlanets = {};
-      transitData.transitAspects.forEach(aspect => {
+      const transitPlanets: Record<string, number[]> = {};
+      transitData.transitAspects.forEach((aspect) => {
         const astroName = mapPlanetName(aspect.planetName2);
         if (!transitPlanets[astroName]) {
           transitPlanets[astroName] = [aspect.longitude];
@@ -173,8 +208,8 @@ function App() {
     }
   };
 
-  const callChatGPT = async (birthChart, transitData) => {
-    const apiKey = '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';
+  const callChatGPT = async (birthChart: BirthChart, transitData: TransitData) => {
+    const apiKey = ''; 
 
     setGptLoading(true);
 
@@ -185,9 +220,7 @@ function App() {
       },
       {
         role: "user",
-        content: `Aqui estão os dados do mapa astral, fale a interpretação de cada planeta e cada aspecto e pontos de interesse: ${JSON.stringify(birthChart)}. 
-Aqui estão os dados do trânsito, fale em detalhes e explicite o período de duração: ${JSON.stringify(transitData)}. 
-Forneça uma análise astrológica completa em português.`,
+        content: `Aqui estão os dados do mapa astral: ${JSON.stringify(birthChart)}, na interpretação do mapa astral decorra casa a casa, e cada ponto de interesse. Além de decorrer sobre todos os aspectos um a um e fazer uma conclusão final. Aqui estão os dados do trânsito: ${JSON.stringify(transitData)}. Em relação aos trânsitos, descrever uma a um, destacando o período (data inicial e final) e fazer um texto de conclusão sobre seu momento atual em base a isso.`,
       },
     ];
 
@@ -245,19 +278,58 @@ Forneça uma análise astrológica completa em português.`,
     }
   };
 
-  const formatGPTResponse = (text) => {
+  const formatGPTResponse = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim() !== '');
-
+  
     return lines.map((line, idx) => {
       if (line.startsWith('###')) {
-        return <h3 key={idx} style={{ color: '#4CAF50', marginTop: '20px' }}>{line.replace('###', '').trim()}</h3>;
+        // Replace title with planet/star emoji
+        return (
+          <h2 key={idx} style={{
+            color: '#673AB7',
+            fontWeight: 'bold',
+            fontFamily: 'Georgia, serif',
+            marginTop: '30px',
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <span style={{ marginRight: '10px' }}>✨</span>
+            {line.replace('###', '').trim()}
+          </h2>
+        );
       } else if (line.startsWith('**')) {
-        return <li key={idx} style={{ marginLeft: '20px' }}>{line.replace(/\*\*/g, '').trim()}</li>;
+        // Use custom astrology bullet (like ♈, ♉, etc.)
+        return (
+          <li key={idx} style={{
+            marginLeft: '24px',
+            color: '#333',
+            fontFamily: 'Georgia, serif',
+            lineHeight: '1.8',
+            listStyle: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '8px'
+          }}>
+            <span style={{ marginRight: '10px', fontSize: '18px' }}>🔮</span>
+            {line.replace(/\*\*/g, '').trim()}
+          </li>
+        );
       } else {
-        return <p key={idx} style={{ marginBottom: '12px', lineHeight: '1.6' }}>{line}</p>;
+        return (
+          <p key={idx} style={{
+            marginBottom: '12px',
+            color: '#444',
+            fontFamily: 'Georgia, serif',
+            lineHeight: '1.8'
+          }}>
+            {line}
+          </p>
+        );
       }
     });
   };
+  
 
   return (
     <div className="App">
@@ -283,19 +355,42 @@ Forneça uma análise astrológica completa em português.`,
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
 
           <label>Data e Hora de Nascimento:</label>
-          <DatePicker selected={birthdate} onChange={(date) => setBirthdate(date)} showTimeSelect dateFormat="yyyy-MM-dd'T'HH:mm:ss" />
+          <DatePicker
+            selected={birthdate}
+            onChange={(date: Date | null) => date && setBirthdate(date)}
+            showTimeSelect
+            dateFormat="yyyy-MM-dd'T'HH:mm:ss"
+          />
 
           <label>Data do Trânsito:</label>
-          <DatePicker selected={transitTime} onChange={(date) => setTransitTime(date)} showTimeSelect dateFormat="yyyy-MM-dd'T'HH:mm:ss" />
+          <DatePicker
+            selected={transitTime}
+            onChange={(date: Date | null) => date && setTransitTime(date)}
+            showTimeSelect
+            dateFormat="yyyy-MM-dd'T'HH:mm:ss"
+          />
 
           <label>País:</label>
-          <Select options={countryOptions} value={countryOptions.find(option => option.value === country)} onChange={(option) => setCountry(option.value)} />
+          <Select<OptionType>
+            options={countryOptions}
+            value={countryOptions.find(option => option.value === country) || null}
+            onChange={(option: SingleValue<OptionType>) => option && setCountry(option.value)}
+          />
 
           <label>Cidade:</label>
-          <Select options={cityOptions} value={cityOptions.find(option => option.value === city)} onChange={(option) => setCity(option.value)} isDisabled={!country} />
+          <Select<OptionType>
+            options={cityOptions}
+            value={cityOptions.find(option => option.value === city) || null}
+            onChange={(option: SingleValue<OptionType>) => option && setCity(option.value)}
+            isDisabled={!country}
+          />
 
           <label>UTC Offset:</label>
-          <input type="number" value={utcOffset} onChange={(e) => setUtcOffset(e.target.value)} />
+          <input
+            type="number"
+            value={utcOffset ?? ''}
+            onChange={(e) => setUtcOffset(parseFloat(e.target.value))}
+          />
         </form>
       )}
 
@@ -318,7 +413,16 @@ Forneça uma análise astrológica completa em português.`,
 
       <div id="paper" style={{ width: '800px', height: '800px', margin: '0 auto' }}></div>
 
-      <div style={{ marginTop: '30px', padding: '20px', background: '#f5f5f5', borderRadius: '8px', minHeight: '150px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <div style={{
+        marginTop: '30px',
+        padding: '20px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        minHeight: '150px',
+        maxWidth: '800px',
+        marginLeft: 'auto',
+        marginRight: 'auto'
+      }}>
         <h3 style={{ textAlign: 'center' }}>🪐 Interpretação Astrológica</h3>
         {gptLoading && <p>Interpretando mapa... ⏳</p>}
         {!gptLoading && gptResponse && (
