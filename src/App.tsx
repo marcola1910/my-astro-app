@@ -209,7 +209,8 @@ function App() {
   };
 
   const callChatGPT = async (birthChart: BirthChart, transitData: TransitData) => {
-    const apiKey = ''; 
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
+    console.log('Loaded API Key:', apiKey);
 
     setGptLoading(true);
 
@@ -220,7 +221,7 @@ function App() {
       },
       {
         role: "user",
-        content: `Aqui estão os dados do mapa astral: ${JSON.stringify(birthChart)}, na interpretação do mapa astral decorra casa a casa, e cada ponto de interesse. Além de decorrer sobre todos os aspectos um a um e fazer uma conclusão final. Aqui estão os dados do trânsito: ${JSON.stringify(transitData)}. Em relação aos trânsitos, descrever uma a um, destacando o período (data inicial e final) e fazer um texto de conclusão sobre seu momento atual em base a isso.`,
+        content: `Aqui estão os dados do mapa astral: ${JSON.stringify(birthChart)}, na interpretação do mapa astral decorra casa a casa, e faça uam interpretação uma a uma. Depois, decorra sobre todos os aspectos um a um fazendo interpretação textual. Depois disso fazer uma conclusão final. Aqui estão os dados do trânsito: ${JSON.stringify(transitData)}. Em relação aos trânsitos, descrever uma a um e dar sua interpretação de cada, destacando o período (data inicial e final) e fazer um texto de conclusão sobre seu momento atual em base a isso.`,
       },
     ];
 
