@@ -156,6 +156,8 @@ function App() {
     }
 
     const chartSize = Math.min(window.innerWidth * 0.9, 800);
+    const scaleFactor = window.innerWidth < 600 ? 0.6 : 1; // Dynamic scaling for mobile
+    const marginValue = window.innerWidth < 600 ? 50 : 100; // Adjust margin for small screens
 
     const planetsData: Record<string, number[]> = {};
     birthChart.planets.forEach((planet) => {
@@ -166,8 +168,8 @@ function App() {
     const cuspidesData = birthChart.cuspides.map(cusp => cusp.cuspLongitude);
 
     const chart = new AstroChart('paper', chartSize, chartSize, {
-      MARGIN: 100,
-      SYMBOL_SCALE: 1,
+      MARGIN: marginValue,
+      SYMBOL_SCALE: scaleFactor,
       COLOR_ARIES: 'transparent',
       COLOR_TAURUS: 'transparent',
       COLOR_GEMINI: 'transparent',
@@ -220,7 +222,6 @@ function App() {
       radix.transit(dataTransit);
     }
   };
-
   const callChatGPT = async (birthChart: BirthChart, transitData: TransitData) => {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
     
