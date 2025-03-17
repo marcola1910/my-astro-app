@@ -6,6 +6,13 @@ import Select, { SingleValue } from 'react-select';
 import axios from 'axios';
 import './App.css';
 
+declare global {
+  interface Window {
+    gtag: (...args: any[]) => void;
+  }
+}
+
+
 interface OptionType {
   value: string;
   label: string;
@@ -258,6 +265,14 @@ function App() {
   const handleSubmit = async () => {
     if (!isFormValid) return;
     setGptResponse('');
+
+    // Google Analytics Event Tracking
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'click', {
+        event_category: 'Button',
+        event_label: 'Generate Map',
+      });
+    }
 
     const birthChartRequest = {
       birthday: formatLocalDateTime(birthdate),
