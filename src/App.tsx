@@ -216,8 +216,7 @@ function App() {
 
   const callChatGPT = async (birthChart: BirthChart, transitData: TransitData) => {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
-    console.log('Loaded API Key:', apiKey);
-
+    
     setGptLoading(true);
 
     const messages = [
