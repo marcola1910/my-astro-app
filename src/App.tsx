@@ -142,7 +142,13 @@ function App() {
 
   const renderAstroChart = (birthChart: BirthChart, transitData: TransitData | null = null) => {
     const paper = document.getElementById('paper');
-    if (paper) paper.innerHTML = '';
+    if (paper) {
+      while (paper.firstChild) {
+        paper.removeChild(paper.firstChild);
+      }
+    }
+
+    const chartSize = Math.min(window.innerWidth * 0.9, 800);
 
     const planetsData: Record<string, number[]> = {};
     birthChart.planets.forEach((planet) => {
@@ -152,7 +158,7 @@ function App() {
 
     const cuspidesData = birthChart.cuspides.map(cusp => cusp.cuspLongitude);
 
-    const chart = new AstroChart('paper', 800, 800, {
+    const chart = new AstroChart('paper', chartSize, chartSize, {
       MARGIN: 100,
       SYMBOL_SCALE: 1,
       COLOR_ARIES: 'transparent',
@@ -412,24 +418,15 @@ function App() {
         Gerar Mapa
       </button>
 
-      <div id="paper" style={{ width: '800px', height: '800px', margin: '0 auto' }}></div>
+      <div id="paper"></div>
 
-      <div style={{
-        marginTop: '30px',
-        padding: '20px',
-        background: '#f5f5f5',
-        borderRadius: '8px',
-        minHeight: '150px',
-        maxWidth: '800px',
-        marginLeft: 'auto',
-        marginRight: 'auto'
-      }}>
+      <div className="gpt-interpretation">
         <h3 style={{ textAlign: 'center' }}>🪐 Interpretação Astrológica</h3>
-        {gptLoading && <p>Interpretando mapa... ⏳</p>}
-        {!gptLoading && gptResponse && (
-          <div>{formatGPTResponse(gptResponse)}</div>
-        )}
-        {!gptLoading && !gptResponse && <p>Gere um mapa para ver a análise.</p>}
+          {gptLoading && <p>Interpretando mapa... ⏳</p>}
+          {!gptLoading && gptResponse && (
+            <div>{formatGPTResponse(gptResponse)}</div>
+          )}
+          {!gptLoading && !gptResponse && <p>Gere um mapa para ver a análise.</p>}
       </div>
     </div>
   );
