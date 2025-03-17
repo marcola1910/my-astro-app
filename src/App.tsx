@@ -268,8 +268,8 @@ function App() {
     setGptResponse('');
 
     // Google Analytics Event Tracking
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'click', {
+    if (typeof window !== 'undefined' && typeof window.gtag !== 'undefined') {
+      window.gtag('event', 'click', {
         event_category: 'Button',
         event_label: 'Generate Map',
       });
