@@ -92,7 +92,7 @@ function App() {
     if (country) {
       const fetchCities = async () => {
         try {
-          const response = await axios.get(`http://api.geonames.org/searchJSON?country=${country}&maxRows=50&username=${GEO_NAMES_USERNAME}`);
+          const response = await axios.get(`http://api.geonames.org/searchJSON?country=${country}&maxRows=1000&username=${GEO_NAMES_USERNAME}`);
           const cities = response.data.geonames.map((city: any) => ({
             value: city.name,
             label: city.name,
