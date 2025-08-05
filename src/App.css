@@ -141,4 +141,95 @@ div p {
   .gpt-interpretation {
     padding: 15px;
   }
+
+  .astro-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #ccc;
+    margin-bottom: 32px;
+    font-size: 14px;
+    background-color: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+  }
+
+  .astro-table th,
+  .astro-table td {
+    border: 1px solid #ccc;
+    padding: 10px 12px;
+    text-align: left;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .astro-table thead {
+    background-color: #f0e6fa;
+    color: #212121;
+  }
+
+  .astro-table tbody tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+
+  .astro-table tbody tr:hover {
+    background-color: #f3e5f5;
+  }
+
+
 }
+
+
+
+    /* Table Sections */
+  .astro-tables-container {
+    margin-top: 40px;
+    width: 100%;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+  }
+
+  .table-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #4a148c;
+    margin: 40px 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* Styled Tables */
+  .astro-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+
+  .astro-table thead {
+    background-color: #e1bee7;
+    color: #212121;
+  }
+
+  .astro-table th,
+  .astro-table td {
+    border: 1px solid #ddd;
+    padding: 12px 14px;
+    text-align: left;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .astro-table tbody tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+
+  .astro-table tbody tr:hover {
+    background-color: #f3e5f5;
+  }

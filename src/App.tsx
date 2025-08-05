@@ -17,24 +17,10 @@ interface OptionType {
   label: string;
 }
 
-interface Planet {
-  planetName: string;
-  planetLongitude: number;
-}
-
-interface Cusp {
-  cuspLongitude: number;
-}
-
-interface InterestZone {
-  name: string;
-  angle: number;
-}
-
-interface BirthChart {
-  planets: Planet[];
+interface TransitData {
+  birthChart: BirthChart;
+  transitAspects: TransitAspect[];
   cuspides: Cusp[];
-  interestZone: InterestZone[];
 }
 
 interface TransitAspect {
@@ -48,16 +34,50 @@ interface TransitAspect {
   house: number;
 }
 
-interface TransitData {
-  transitAspects: TransitAspect[];
-  cuspides: Cusp[];
+interface Planet {
+  id: string;
+  planetName: string;
+  planetLongitude: number;
+  zodiacSign: string;
+  house: number;
+  cupangle: number;
+  retrograde: boolean;
 }
+
+interface Cusp {
+  house: number;
+  cuspLongitude: number;
+}
+
+interface InterestZone {
+  name: string;
+  angle: number;
+  zodiacsign: string;
+}
+
+interface FixedStar {
+  starName: string;
+  position: number;
+  houseNumber: number;
+}
+
+interface BirthChart {
+  planets: Planet[];
+  aspects: any[];
+  cuspides: Cusp[];
+  interestZone: InterestZone[];
+  fixedStars: FixedStar[];
+}
+
 
 const GEO_NAMES_USERNAME = 'marcalcantarageo';
 const API_URL = '/ephemeris/calculateBirthChart';
 const TRANSIT_API_URL = '/ephemeris/transitCalculation';
 
 function App() {
+  const [birthChart, setBirthChart] = useState<BirthChart | null>(null);
+  const [autoGenerating, setAutoGenerating] = useState<boolean>(false);
+  const [paramError, setParamError] = useState<string | null>(null);
   const [name, setName] = useState<string>('');
   const [birthdate, setBirthdate] = useState<Date>(new Date());
   const [transitTime, setTransitTime] = useState<Date>(new Date());
@@ -72,7 +92,8 @@ function App() {
   const [gptResponse, setGptResponse] = useState<string>('');
   const [gptLoading, setGptLoading] = useState<boolean>(false);
   const [transitData, setTransitData] = useState<TransitData | null>(null);
-
+  
+  
   const formatLocalDateTime = (date: Date) => {
     const pad = (num: number) => String(num).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
@@ -132,7 +153,71 @@ function App() {
     }
   }, [city, birthdate]);
 
-  const isFormValid = name && birthdate && country && city && lat !== null && long !== null;
+  useEffect(() => {
+    if (autoGenerating && name && birthdate && lat !== null && long !== null && utcOffset !== null) {
+      handleSubmit();
+    }
+  }, [autoGenerating, name, birthdate, lat, long, utcOffset]);
+
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const nome = searchParams.get('nome');
+    const dataHoraNascimento = searchParams.get('birth');
+    const latNascimento = searchParams.get('lat');
+    const longNascimento = searchParams.get('long');
+    const latAtual = searchParams.get('transitLat');
+    const longAtual = searchParams.get('transitLong');
+    const dataHoraTransito = searchParams.get('transit');
+    const utcParam = searchParams.get('utc');
+
+    const hasAllParams = nome && dataHoraNascimento && latNascimento && longNascimento &&
+                        latAtual && longAtual && dataHoraTransito && utcParam;
+
+    if (hasAllParams) {
+      try {
+        const parsedBirth = new Date(dataHoraNascimento!);
+        const parsedTransit = new Date(dataHoraTransito!);
+        const parsedLat = parseFloat(latNascimento!);
+        const parsedLong = parseFloat(longNascimento!);
+        const parsedUtc = parseFloat(utcParam!);
+
+        if (isNaN(parsedLat) || isNaN(parsedLong) || isNaN(parsedUtc)) {
+          throw new Error("Coordenadas ou UTC inválidos.");
+        }
+
+        setName(nome!);
+        setBirthdate(parsedBirth);
+        setLat(parsedLat);
+        setLong(parsedLong);
+        setTransitTime(parsedTransit);
+        setUtcOffset(parsedUtc);
+        setShowForm(false);
+        setAutoGenerating(true);
+
+        setTimeout(() => {
+          handleSubmit();
+        }, 150);
+        
+      } catch (err: any) {
+        setParamError("Erro ao interpretar os parâmetros da URL: " + err.message);
+      }
+      } else if (
+        nome || dataHoraNascimento || latNascimento || longNascimento ||
+        latAtual || longAtual || dataHoraTransito || utcParam
+      ) {
+        setParamError("Parâmetros incompletos na URL. Por favor, forneça todos os dados.");
+      }
+    }, []
+  );
+
+  const isFormValid =
+  name &&
+  birthdate &&
+  lat !== null &&
+  long !== null &&
+  utcOffset !== null &&
+  (country && city || autoGenerating);
 
   const mapPlanetName = (planetName: string) => {
     switch (planetName) {
@@ -270,7 +355,8 @@ function App() {
   };
 
   const handleSubmit = async () => {
-    if (!isFormValid) return;
+    if (!isFormValid && !autoGenerating) return;
+
     setGptResponse('');
 
     if (typeof window !== 'undefined' && typeof window.gtag !== 'undefined') {
@@ -290,13 +376,14 @@ function App() {
 
     try {
       const response = await axios.post(API_URL, birthChartRequest);
+      setBirthChart(response.data); 
       const transitRequest = {
         dateTime: formatLocalDateTime(transitTime),
         birthChart: response.data,
       };
       const transitResponse = await axios.post(TRANSIT_API_URL, transitRequest);
-
-      renderAstroChart(transitResponse.data.birthChart, transitResponse.data);
+      
+      renderAstroChart(response.data, transitResponse.data);
       setTransitData(transitResponse.data);
 
       await callChatGPT(transitResponse.data.birthChart, transitResponse.data);
@@ -332,8 +419,139 @@ function App() {
     });
   };
 
+  const renderTableSection = () => {
+    if (!birthChart || !transitData) return null;
+
+    const planets = birthChart.planets || [];
+    const interestZones = birthChart.interestZone || [];
+    const transitAspects = transitData.transitAspects || [];
+    const fixedStars = birthChart.fixedStars || [];
+
+    return (
+      <div className="astro-tables-container">
+        {/* Planetas */}
+        <h3 className="table-title">🪐 Planetas</h3>
+        <table className="astro-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Longitude</th>
+              <th>Casa</th>
+              <th>Signo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {planets.map((p: any, idx: number) => (
+              <tr key={idx}>
+                <td>{p.planetName}</td>
+                <td>{p.planetLongitude?.toFixed(2)}°</td>
+                <td>{p.house}</td>
+                <td>{p.zodiacSign}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Pontos de Interesse */}
+        <h3 className="table-title">📍 Pontos de Interesse</h3>
+        <table className="astro-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Ângulo (°)</th>
+              <th>Signo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {interestZones.map((zone: InterestZone, idx: number) => (
+              <tr key={idx}>
+                <td>{zone.name}</td>
+                <td>{zone.angle?.toFixed(2)}</td>
+                <td>{zone.zodiacsign}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Aspectos de Trânsito */}
+        <h3 className="table-title">✨ Aspectos de Trânsito</h3>
+        <table className="astro-table">
+          <thead>
+            <tr>
+              <th>Planeta Natal</th>
+              <th>Casa</th>
+              <th>Aspecto</th>
+              <th>Planeta Trânsito</th>
+              <th>Longitude</th>
+              <th>Início</th>
+              <th>Fim</th>
+              <th>Duração</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transitAspects.map((aspect: TransitAspect, idx: number) => {
+              const start = aspect.startDate ? new Date(aspect.startDate) : null;
+              const end = aspect.endDate ? new Date(aspect.endDate) : null;
+              const duration = start && end
+                ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24))
+                : '-';
+              return (
+                <tr key={idx}>
+                  <td>{aspect.planetName1}</td>
+                  <td>{aspect.house}</td>
+                  <td>{aspect.aspect}</td>
+                  <td>{aspect.planetName2}</td>
+                  <td>{aspect.longitude?.toFixed(2)}</td>
+                  <td>{start ? start.toLocaleDateString() : '-'}</td>
+                  <td>{end ? end.toLocaleDateString() : '-'}</td>
+                  <td>{duration}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Estrelas Fixas */}
+        {fixedStars.length > 0 && (
+          <>
+            <h3 className="table-title">🌟 Estrelas Fixas</h3>
+            <table className="astro-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Longitude</th>
+                  <th>Casa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fixedStars.map((star: any, idx: number) => (
+                  <tr key={idx}>
+                    <td>{star.starName}</td>
+                    <td>{star.position?.toFixed(2)}°</td>
+                    <td>{star.houseNumber}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+      </div>
+    );
+  };
+  
   return (
     <div className="App">
+      {autoGenerating && (
+          <p style={{ backgroundColor: '#e3f2fd', padding: '12px', borderRadius: '8px', color: '#0d47a1' }}>
+            Gerando automaticamente com base nos parâmetros da URL...
+          </p>
+        )}
+
+        {paramError && (
+          <p style={{ backgroundColor: '#ffebee', padding: '12px', borderRadius: '8px', color: '#b71c1c' }}>
+            ⚠️ {paramError}
+          </p>
+      )}
       <button
         onClick={() => setShowForm(!showForm)}
         style={{
@@ -369,7 +587,7 @@ function App() {
             onChange={(date: Date | null) => date && setTransitTime(date)}
             showTimeSelect
             dateFormat="yyyy-MM-dd'T'HH:mm:ss"
-          />
+          /> 
 
           <label>País:</label>
           <Select<OptionType>
@@ -395,22 +613,25 @@ function App() {
         </form>
       )}
 
-      <button
-        disabled={!isFormValid}
-        onClick={handleSubmit}
-        style={{
-          backgroundColor: isFormValid ? '#4CAF50' : '#ddd',
-          color: '#fff',
-          padding: '10px 20px',
-          fontSize: '16px',
-          border: 'none',
-          borderRadius: '6px',
-          cursor: isFormValid ? 'pointer' : 'not-allowed',
-          marginBottom: '20px',
-        }}
-      >
-        Gerar Mapa
-      </button>
+      {!autoGenerating && (
+        <button
+          disabled={!name || !birthdate || lat === null || long === null || utcOffset === null}
+          onClick={handleSubmit}
+          style={{
+            backgroundColor: '#4CAF50',
+            color: '#fff',
+            padding: '10px 20px',
+            fontSize: '16px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            marginBottom: '20px'
+          }}
+        >
+          Gerar Mapa
+        </button>
+      )}
+      
 
       <div id="paper"></div>
        
@@ -426,48 +647,13 @@ function App() {
       {/* Transit Aspect Table */}
       {transitData && transitData.transitAspects.length > 0 && (
         <div style={{ marginTop: '30px', maxWidth: '800px', margin: '0 auto' }}>
-          <h3 style={{ textAlign: 'center', marginBottom: '10px' }}>✨ Tabela de Aspectos de Trânsito</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'Poppins, sans-serif' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#eee' }}>
-                <th style={{ border: '1px solid #ccc', padding: '8px' }}>Planetas</th>
-                <th style={{ border: '1px solid #ccc', padding: '8px' }}>Aspecto</th>
-                <th style={{ border: '1px solid #ccc', padding: '8px' }}>Início</th>
-                <th style={{ border: '1px solid #ccc', padding: '8px' }}>Fim</th>
-                <th style={{ border: '1px solid #ccc', padding: '8px' }}>Duração (dias)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transitData.transitAspects.map((aspect, idx) => {
-                const start = aspect.startDate ? new Date(aspect.startDate) : null;
-                const end = aspect.endDate ? new Date(aspect.endDate) : null;
-                const duration = start && end
-                  ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24))
-                  : '-';
-
-                return (
-                  <tr key={idx}>
-                    <td style={{ border: '1px solid #ccc', padding: '8px' }}>
-                      {aspect.planetName1} {aspect.aspect} {aspect.planetName2}
-                    </td>
-                    <td style={{ border: '1px solid #ccc', padding: '8px' }}>{aspect.aspect}</td>
-                    <td style={{ border: '1px solid #ccc', padding: '8px' }}>
-                      {start ? start.toLocaleDateString() : '-'}
-                    </td>
-                    <td style={{ border: '1px solid #ccc', padding: '8px' }}>
-                      {end ? end.toLocaleDateString() : '-'}
-                    </td>
-                    <td style={{ border: '1px solid #ccc', padding: '8px' }}>
-                      {duration}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          
         </div>
       )}
       
+      {/* Nova seção com tabelas detalhadas */}
+      {renderTableSection()}
+
     </div>
   );
 }
