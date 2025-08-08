@@ -72,7 +72,7 @@ interface BirthChart {
 
 const GEO_NAMES_USERNAME = 'marcalcantarageo';
 const API_URL = '/api/ephemeris/calculateBirthChart';
-const TRANSIT_API_URL = '/ephemeris/transitCalculation';
+const TRANSIT_API_URL = '/api/ephemeris/transitCalculation';
 
 function App() {
   const [birthChart, setBirthChart] = useState<BirthChart | null>(null);
