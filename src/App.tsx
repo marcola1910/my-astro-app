@@ -69,7 +69,6 @@ interface BirthChart {
   fixedStars: FixedStar[];
 }
 
-
 const GEO_NAMES_USERNAME = 'marcalcantarageo';
 const API_URL = '/api/ephemeris/calculateBirthChart';
 const TRANSIT_API_URL = '/api/ephemeris/transitCalculation';
@@ -92,8 +91,7 @@ function App() {
   const [gptResponse, setGptResponse] = useState<string>('');
   const [gptLoading, setGptLoading] = useState<boolean>(false);
   const [transitData, setTransitData] = useState<TransitData | null>(null);
-  
-  
+
   const formatLocalDateTime = (date: Date) => {
     const pad = (num: number) => String(num).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
@@ -159,7 +157,6 @@ function App() {
     }
   }, [autoGenerating, name, birthdate, lat, long, utcOffset]);
 
-
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const nome = searchParams.get('nome');
@@ -172,7 +169,7 @@ function App() {
     const utcParam = searchParams.get('utc');
 
     const hasAllParams = nome && dataHoraNascimento && latNascimento && longNascimento &&
-                        latAtual && longAtual && dataHoraTransito && utcParam;
+                         latAtual && longAtual && dataHoraTransito && utcParam;
 
     if (hasAllParams) {
       try {
@@ -183,7 +180,7 @@ function App() {
         const parsedUtc = parseFloat(utcParam!);
 
         if (isNaN(parsedLat) || isNaN(parsedLong) || isNaN(parsedUtc)) {
-          throw new Error("Coordenadas ou UTC inválidos.");
+          throw new Error('Coordenadas ou UTC inválidos.');
         }
 
         setName(nome!);
@@ -198,26 +195,24 @@ function App() {
         setTimeout(() => {
           handleSubmit();
         }, 150);
-        
       } catch (err: any) {
-        setParamError("Erro ao interpretar os parâmetros da URL: " + err.message);
+        setParamError('Erro ao interpretar os parâmetros da URL: ' + err.message);
       }
-      } else if (
-        nome || dataHoraNascimento || latNascimento || longNascimento ||
-        latAtual || longAtual || dataHoraTransito || utcParam
-      ) {
-        setParamError("Parâmetros incompletos na URL. Por favor, forneça todos os dados.");
-      }
-    }, []
-  );
+    } else if (
+      nome || dataHoraNascimento || latNascimento || longNascimento ||
+      latAtual || longAtual || dataHoraTransito || utcParam
+    ) {
+      setParamError('Parâmetros incompletos na URL. Por favor, forneça todos os dados.');
+    }
+  }, []);
 
   const isFormValid =
-  name &&
-  birthdate &&
-  lat !== null &&
-  long !== null &&
-  utcOffset !== null &&
-  (country && city || autoGenerating);
+    name &&
+    birthdate &&
+    lat !== null &&
+    long !== null &&
+    utcOffset !== null &&
+    ((country && city) || autoGenerating);
 
   const mapPlanetName = (planetName: string) => {
     switch (planetName) {
@@ -246,9 +241,11 @@ function App() {
       }
     }
 
-    const chartSize = Math.min(window.innerWidth * 0.9, 800);
-    const scaleFactor = window.innerWidth < 600 ? 0.6 : 1;
-    const marginValue = window.innerWidth < 600 ? 50 : 100;
+    // Use container width (fits inside WebView)
+    const containerWidth = paper?.clientWidth ?? window.innerWidth;
+    const chartSize = Math.min(containerWidth, 800);
+    const scaleFactor = containerWidth < 600 ? 0.6 : 1;
+    const marginValue = containerWidth < 600 ? 50 : 100;
 
     const planetsData: Record<string, number[]> = {};
     birthChart.planets.forEach((planet) => {
@@ -256,7 +253,7 @@ function App() {
       planetsData[astroName] = [planet.planetLongitude];
     });
 
-    const cuspidesData = birthChart.cuspides.map(cusp => cusp.cuspLongitude);
+    const cuspidesData = birthChart.cuspides.map((cusp) => cusp.cuspLongitude);
 
     const chart = new AstroChart('paper', chartSize, chartSize, {
       MARGIN: marginValue,
@@ -303,7 +300,7 @@ function App() {
         }
       });
 
-      const transitCusps = transitData.cuspides.map(cusp => cusp.cuspLongitude);
+      const transitCusps = transitData.cuspides.map((cusp) => cusp.cuspLongitude);
 
       const dataTransit = {
         planets: transitPlanets,
@@ -314,17 +311,29 @@ function App() {
     }
   };
 
+  // Re-render chart on resize to keep it responsive
+  useEffect(() => {
+    const handler = () => {
+      if (birthChart) {
+        renderAstroChart(birthChart, transitData ?? null);
+      }
+    };
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [birthChart, transitData]);
+
   const callChatGPT = async (birthChart: BirthChart, transitData: TransitData) => {
     const apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
     setGptLoading(true);
 
     const messages = [
       {
-        role: "system",
-        content: "Você é um especialista em astrologia. Interprete mapas astrais e trânsitos de forma clara e detalhada. A estrutura do texto deve ser: Parte 1 - Fale o Sol, a Lua e o Asc da pessoa; Parte 2 - Falar sobre as 12 casas do birthchart da pessoa, uma a uma, se existe algum planeta na casa interpretar sua influência; Parte 3 - Falar sobre os aspectos do birthchart da pessoa, uma a um; Parte 4- Falar sobre os interestZones da pessoa e interpretar cada um no mapa da pessoa; Parte 5 - Falar sobre os aspectos de trânsito, interpretar cada um e no final uma conclusão conextualizada deles. ; Parte 6 - Conclusão sobre o mapa da pessoa e um outro paragrafo conclusão do trânsito dessa pesssoa. ",
+        role: 'system',
+        content:
+          'Você é um especialista em astrologia. Interprete mapas astrais e trânsitos de forma clara e detalhada. A estrutura do texto deve ser: Parte 1 - Fale o Sol, a Lua e o Asc da pessoa; Parte 2 - Falar sobre as 12 casas do birthchart da pessoa, uma a uma, se existe algum planeta na casa interpretar sua influência; Parte 3 - Falar sobre os aspectos do birthchart da pessoa, uma a um; Parte 4- Falar sobre os interestZones da pessoa e interpretar cada um no mapa da pessoa; Parte 5 - Falar sobre os aspectos de trânsito, interpretar cada um e no final uma conclusão conextualizada deles. ; Parte 6 - Conclusão sobre o mapa da pessoa e um outro paragrafo conclusão do trânsito dessa pesssoa. ',
       },
       {
-        role: "user",
+        role: 'user',
         content: `Aqui estão os dados do mapa astral: ${JSON.stringify(birthChart)}, Aqui estão os dados do trânsito: ${JSON.stringify(transitData)}.`,
       },
     ];
@@ -376,13 +385,13 @@ function App() {
 
     try {
       const response = await axios.post(API_URL, birthChartRequest);
-      setBirthChart(response.data); 
+      setBirthChart(response.data);
       const transitRequest = {
         dateTime: formatLocalDateTime(transitTime),
         birthChart: response.data,
       };
       const transitResponse = await axios.post(TRANSIT_API_URL, transitRequest);
-      
+
       renderAstroChart(response.data, transitResponse.data);
       setTransitData(transitResponse.data);
 
@@ -393,18 +402,41 @@ function App() {
   };
 
   const formatGPTResponse = (text: string) => {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
+    const lines = text.split('\n').filter((line) => line.trim() !== '');
     return lines.map((line, idx) => {
       if (line.startsWith('###')) {
         return (
-          <h2 key={idx} style={{ color: '#673AB7', fontWeight: 'bold', fontFamily: 'Georgia, serif', marginTop: '30px', marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+          <h2
+            key={idx}
+            style={{
+              color: '#673AB7',
+              fontWeight: 'bold',
+              fontFamily: 'Georgia, serif',
+              marginTop: '30px',
+              marginBottom: '12px',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
             <span style={{ marginRight: '10px' }}>✨</span>
             {line.replace('###', '').trim()}
           </h2>
         );
       } else if (line.startsWith('**')) {
         return (
-          <li key={idx} style={{ marginLeft: '24px', color: '#333', fontFamily: 'Georgia, serif', lineHeight: '1.8', listStyle: 'none', display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+          <li
+            key={idx}
+            style={{
+              marginLeft: '24px',
+              color: '#333',
+              fontFamily: 'Georgia, serif',
+              lineHeight: '1.8',
+              listStyle: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '8px',
+            }}
+          >
             <span style={{ marginRight: '10px', fontSize: '18px' }}>🔮</span>
             {line.replace(/\*\*/g, '').trim()}
           </li>
@@ -431,127 +463,135 @@ function App() {
       <div className="astro-tables-container">
         {/* Planetas */}
         <h3 className="table-title">🪐 Planetas</h3>
-        <table className="astro-table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Longitude</th>
-              <th>Casa</th>
-              <th>Signo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {planets.map((p: any, idx: number) => (
-              <tr key={idx}>
-                <td>{p.planetName}</td>
-                <td>{p.planetLongitude?.toFixed(2)}°</td>
-                <td>{p.house}</td>
-                <td>{p.zodiacSign}</td>
+        <div className="table-wrap">
+          <table className="astro-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Longitude</th>
+                <th>Casa</th>
+                <th>Signo</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {planets.map((p: any, idx: number) => (
+                <tr key={idx}>
+                  <td>{p.planetName}</td>
+                  <td>{p.planetLongitude?.toFixed(2)}°</td>
+                  <td>{p.house}</td>
+                  <td>{p.zodiacSign}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Pontos de Interesse */}
         <h3 className="table-title">📍 Pontos de Interesse</h3>
-        <table className="astro-table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Ângulo (°)</th>
-              <th>Signo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {interestZones.map((zone: InterestZone, idx: number) => (
-              <tr key={idx}>
-                <td>{zone.name}</td>
-                <td>{zone.angle?.toFixed(2)}</td>
-                <td>{zone.zodiacsign}</td>
+        <div className="table-wrap">
+          <table className="astro-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Ângulo (°)</th>
+                <th>Signo</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {interestZones.map((zone: InterestZone, idx: number) => (
+                <tr key={idx}>
+                  <td>{zone.name}</td>
+                  <td>{zone.angle?.toFixed(2)}</td>
+                  <td>{zone.zodiacsign}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Aspectos de Trânsito */}
         <h3 className="table-title">✨ Aspectos de Trânsito</h3>
-        <table className="astro-table">
-          <thead>
-            <tr>
-              <th>Planeta Natal</th>
-              <th>Casa</th>
-              <th>Aspecto</th>
-              <th>Planeta Trânsito</th>
-              <th>Longitude</th>
-              <th>Início</th>
-              <th>Fim</th>
-              <th>Duração</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transitAspects.map((aspect: TransitAspect, idx: number) => {
-              const start = aspect.startDate ? new Date(aspect.startDate) : null;
-              const end = aspect.endDate ? new Date(aspect.endDate) : null;
-              const duration = start && end
-                ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24))
-                : '-';
-              return (
-                <tr key={idx}>
-                  <td>{aspect.planetName1}</td>
-                  <td>{aspect.house}</td>
-                  <td>{aspect.aspect}</td>
-                  <td>{aspect.planetName2}</td>
-                  <td>{aspect.longitude?.toFixed(2)}</td>
-                  <td>{start ? start.toLocaleDateString() : '-'}</td>
-                  <td>{end ? end.toLocaleDateString() : '-'}</td>
-                  <td>{duration}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="table-wrap">
+          <table className="astro-table">
+            <thead>
+              <tr>
+                <th>Planeta Natal</th>
+                <th>Casa</th>
+                <th>Aspecto</th>
+                <th>Planeta Trânsito</th>
+                <th>Longitude</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Duração</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transitAspects.map((aspect: TransitAspect, idx: number) => {
+                const start = aspect.startDate ? new Date(aspect.startDate) : null;
+                const end = aspect.endDate ? new Date(aspect.endDate) : null;
+                const duration =
+                  start && end ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)) : '-';
+                return (
+                  <tr key={idx}>
+                    <td>{aspect.planetName1}</td>
+                    <td>{aspect.house}</td>
+                    <td>{aspect.aspect}</td>
+                    <td>{aspect.planetName2}</td>
+                    <td>{aspect.longitude?.toFixed(2)}</td>
+                    <td>{start ? start.toLocaleDateString() : '-'}</td>
+                    <td>{end ? end.toLocaleDateString() : '-'}</td>
+                    <td>{duration}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         {/* Estrelas Fixas */}
         {fixedStars.length > 0 && (
           <>
             <h3 className="table-title">🌟 Estrelas Fixas</h3>
-            <table className="astro-table">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Longitude</th>
-                  <th>Casa</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fixedStars.map((star: any, idx: number) => (
-                  <tr key={idx}>
-                    <td>{star.starName}</td>
-                    <td>{star.position?.toFixed(2)}°</td>
-                    <td>{star.houseNumber}</td>
+            <div className="table-wrap">
+              <table className="astro-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Longitude</th>
+                    <th>Casa</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {fixedStars.map((star: any, idx: number) => (
+                    <tr key={idx}>
+                      <td>{star.starName}</td>
+                      <td>{star.position?.toFixed(2)}°</td>
+                      <td>{star.houseNumber}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
       </div>
     );
   };
-  
+
   return (
     <div className="App">
       {autoGenerating && (
-          <p style={{ backgroundColor: '#e3f2fd', padding: '12px', borderRadius: '8px', color: '#0d47a1' }}>
-            Gerando automaticamente com base nos parâmetros da URL...
-          </p>
-        )}
-
-        {paramError && (
-          <p style={{ backgroundColor: '#ffebee', padding: '12px', borderRadius: '8px', color: '#b71c1c' }}>
-            ⚠️ {paramError}
-          </p>
+        <p style={{ backgroundColor: '#e3f2fd', padding: '12px', borderRadius: '8px', color: '#0d47a1' }}>
+          Gerando automaticamente com base nos parâmetros da URL...
+        </p>
       )}
+
+      {paramError && (
+        <p style={{ backgroundColor: '#ffebee', padding: '12px', borderRadius: '8px', color: '#b71c1c' }}>
+          ⚠️ {paramError}
+        </p>
+      )}
+
       <button
         onClick={() => setShowForm(!showForm)}
         style={{
@@ -563,6 +603,8 @@ function App() {
           borderRadius: '4px',
           cursor: 'pointer',
           marginBottom: '10px',
+          width: '100%',
+          maxWidth: 480,
         }}
       >
         {showForm ? 'Esconder Formulário' : 'Mostrar Formulário'}
@@ -587,19 +629,33 @@ function App() {
             onChange={(date: Date | null) => date && setTransitTime(date)}
             showTimeSelect
             dateFormat="yyyy-MM-dd'T'HH:mm:ss"
-          /> 
+          />
 
           <label>País:</label>
           <Select<OptionType>
+            className="react-select-container"
+            classNamePrefix="react-select"
+            styles={{
+              container: (base) => ({ ...base, width: '100%' }),
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            }}
+            menuPortalTarget={document.body}
             options={countryOptions}
-            value={countryOptions.find(option => option.value === country) || null}
+            value={countryOptions.find((option) => option.value === country) || null}
             onChange={(option: SingleValue<OptionType>) => option && setCountry(option.value)}
           />
 
           <label>Cidade:</label>
           <Select<OptionType>
+            className="react-select-container"
+            classNamePrefix="react-select"
+            styles={{
+              container: (base) => ({ ...base, width: '100%' }),
+              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+            }}
+            menuPortalTarget={document.body}
             options={cityOptions}
-            value={cityOptions.find(option => option.value === city) || null}
+            value={cityOptions.find((option) => option.value === city) || null}
             onChange={(option: SingleValue<OptionType>) => option && setCity(option.value)}
             isDisabled={!country}
           />
@@ -625,35 +681,31 @@ function App() {
             border: 'none',
             borderRadius: '6px',
             cursor: 'pointer',
-            marginBottom: '20px'
+            marginBottom: '20px',
+            width: '100%',
+            maxWidth: 480,
           }}
         >
           Gerar Mapa
         </button>
       )}
-      
 
       <div id="paper"></div>
-       
+
       <div className="gpt-interpretation">
         <h3 style={{ textAlign: 'center' }}>🪐 Interpretação Astrológica</h3>
-          {gptLoading && <p>Interpretando mapa... ⏳</p>}
-          {!gptLoading && gptResponse && (
-            <div>{formatGPTResponse(gptResponse)}</div>
-          )}
-          {!gptLoading && !gptResponse && <p>Gere um mapa para ver a análise.</p>}
+        {gptLoading && <p>Interpretando mapa... ⏳</p>}
+        {!gptLoading && gptResponse && <div>{formatGPTResponse(gptResponse)}</div>}
+        {!gptLoading && !gptResponse && <p>Gere um mapa para ver a análise.</p>}
       </div>
-      
+
       {/* Transit Aspect Table */}
       {transitData && transitData.transitAspects.length > 0 && (
-        <div style={{ marginTop: '30px', maxWidth: '800px', margin: '0 auto' }}>
-          
-        </div>
+        <div style={{ marginTop: '30px', maxWidth: '800px', margin: '0 auto' }}></div>
       )}
-      
+
       {/* Nova seção com tabelas detalhadas */}
       {renderTableSection()}
-
     </div>
   );
 }

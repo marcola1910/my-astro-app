@@ -13,7 +13,8 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: ['c5e9dc25a659.ngrok-free.app', '10.0.2.2'], // ngrok e Android emulator
     proxy: {
-      '/ephemeris': 'http://127.0.0.1:8080',
+      //'/ephemeris': 'http://127.0.0.1:8080',
+      '/ephemeris': 'http://yairalonapp.alephclass.com/',
     },
   },
 });
