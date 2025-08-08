@@ -1,10 +1,16 @@
 /* Importing a modern font */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
-body {
-  font-family: 'Poppins', sans-serif;
+html, body, #root {
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: hidden; /* kill horizontal scroll */
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
   background-color: #f4f4f9;
   display: flex;
   justify-content: center;
@@ -40,6 +46,10 @@ body {
   flex-direction: column;
   gap: 12px;
   box-sizing: border-box;
+
+  /* never overflow viewport */
+  max-width: 100% !important;
+  min-width: 0;
 }
 
 .astro-form label {
@@ -51,6 +61,8 @@ body {
 .astro-form input,
 .astro-form .react-select__control {
   width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0;
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #ddd;
@@ -78,6 +90,8 @@ body {
 /* react-select container fix */
 .react-select-container {
   width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0;
 }
 
 /* Section for the chart */
@@ -119,8 +133,10 @@ div p {
   box-sizing: border-box;
 }
 
-/* Table scroll wrapper */
+/* Table scroll wrapper (prevents layout break) */
 .table-wrap {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -149,6 +165,8 @@ div p {
 /* Styled Tables */
 .astro-table {
   width: 100%;
+  max-width: 100%;
+  table-layout: auto; /* let cells size themselves */
   border-collapse: collapse;
   background-color: #fff;
   border-radius: 6px;
@@ -169,8 +187,13 @@ div p {
   padding: 12px 14px;
   text-align: left;
   font-family: 'Poppins', sans-serif;
+
+  /* allow wrapping so it fits mobile */
+  white-space: normal;
+  word-break: break-word;
 }
 
+/* Zebra + hover */
 .astro-table tbody tr:nth-child(even) {
   background-color: #fafafa;
 }
@@ -197,6 +220,7 @@ div p {
   .astro-form {
     padding: 10px;
     max-width: 100%;
+    width: 100%;
   }
 
   #paper {
@@ -218,6 +242,5 @@ div p {
   .astro-table td {
     font-size: 12px;
     padding: 6px;
-    white-space: nowrap;
   }
 }
