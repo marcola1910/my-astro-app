@@ -71,7 +71,7 @@ interface BirthChart {
 
 
 const GEO_NAMES_USERNAME = 'marcalcantarageo';
-const API_URL = '/ephemeris/calculateBirthChart';
+const API_URL = '/api/ephemeris/calculateBirthChart';
 const TRANSIT_API_URL = '/ephemeris/transitCalculation';
 
 function App() {
