@@ -102,7 +102,7 @@ function App() {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const response = await axios.get(`http://secure.geonames.org/countryInfoJSON?username=${GEO_NAMES_USERNAME}`);
+        const response = await axios.get(`https://secure.geonames.org/countryInfoJSON?username=${GEO_NAMES_USERNAME}`);
         const countries = response.data.geonames.map((country: any) => ({
           value: country.countryCode,
           label: country.countryName,
@@ -119,7 +119,7 @@ function App() {
     if (country) {
       const fetchCities = async () => {
         try {
-          const response = await axios.get(`http://secure.geonames.org/searchJSON?country=${country}&maxRows=1000&username=${GEO_NAMES_USERNAME}`);
+          const response = await axios.get(`https://secure.geonames.org/searchJSON?country=${country}&maxRows=1000&username=${GEO_NAMES_USERNAME}`);
           const cities = response.data.geonames.map((city: any) => ({
             value: city.name,
             label: city.name,
@@ -137,12 +137,12 @@ function App() {
     if (city) {
       const fetchCityCoordinates = async () => {
         try {
-          const response = await axios.get(`http://secure.geonames.org/searchJSON?q=${city}&maxRows=1&username=${GEO_NAMES_USERNAME}`);
+          const response = await axios.get(`https://secure.geonames.org/searchJSON?q=${city}&maxRows=1&username=${GEO_NAMES_USERNAME}`);
           const cityData = response.data.geonames[0];
           setLat(parseFloat(cityData.lat));
           setLong(parseFloat(cityData.lng));
 
-          const timezoneResponse = await axios.get(`http://secure.geonames.org/timezoneJSON?lat=${cityData.lat}&lng=${cityData.lng}&username=${GEO_NAMES_USERNAME}`);
+          const timezoneResponse = await axios.get(`https://secure.geonames.org/timezoneJSON?lat=${cityData.lat}&lng=${cityData.lng}&username=${GEO_NAMES_USERNAME}`);
           const timezoneOffset = timezoneResponse.data.gmtOffset;
           setUtcOffset(timezoneOffset);
         } catch (error) {
